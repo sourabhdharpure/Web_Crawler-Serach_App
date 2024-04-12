@@ -1,4 +1,3 @@
-# highlevel_assignment
 
 This project uses Web Crawling and Vectorization to create a conversational platform whose key features are
 
@@ -25,15 +24,14 @@ This project uses Web Crawling and Vectorization to create a conversational plat
 
 (server will start on port 3000)
 
-# CURL to crawl a URL and store the data in Pinecone DB  ( Generating embeddings is a compute-heavy task so that this API might take 20 - 30 sec depending upon the content of your URL)
-
+# CURL to crawl a URL and store the data in Pinecone DB  
 curl --location 'http://localhost:3000/crawl' \
 --header 'Content-Type: application/json' \
 --data '{
     "url": "https://en.wikipedia.org/wiki/India"
 }'
 
-# CURL to submit any user query ( Again, cosine similarity matrix comparison is a compute-heavy task, So this API might take 5-7 secs depending upon the dataset)
+# CURL to submit any user query 
 
 curl --location 'http://localhost:3000/query?question=which%20is%20the%20most%20populus%20country%20in%202023'
 
