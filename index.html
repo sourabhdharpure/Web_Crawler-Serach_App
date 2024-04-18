@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Crawler and Search</title>
+<style>
+    body {
+        background-color: #1e1e1e;
+        color: #fff;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    #content {
+        text-align: center;
+    }
+
+    h1 {
+        color: #fff;
+        margin-bottom: 20px;
+        font-weight: normal;
+    }
+
+    input[type="text"], button {
+        background-color: #333;
+        color: #fff;
+        border: none;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 5px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    input[type="text"]::placeholder {
+        color: #999;
+    }
+
+    button {
+        cursor: pointer;
+    }
+
+    #search-container {
+        display: none;
+    }
+
+    #loader {
+        display: none;
+        border: 6px solid #f3f3f3;
+        border-top: 6px solid #3498db;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    #search-results {
+        margin-top: 20px;
+        text-align: left;
+    }
+
+    .result {
+        background-color: #333;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .result:hover {
+        background-color: #444;
+    }
+
+    .result-title {
+        font-weight: bold;
+        color: #00aaff;
+        margin-bottom: 5px;
+        font-size: 1.1rem;
+    }
+
+    .result-text {
+        color: #ddd;
+        font-size: 0.9rem;
+    }
+
+    .history {
+        margin-top: 20px;
+    }
+
+    .history-item {
+        display: inline-block;
+        margin-right: 10px;
+        cursor: pointer;
+        color: #00aaff;
+        font-size: 0.9rem;
+    }
+
+    @media screen and (max-width: 600px) {
+        /* Adjust styles for smaller screens */
+        input[type="text"], button {
+            width: 100%;
+        }
+    }
+</style>
+</head>
+<body>
+    <div id="content">
+        <h1>Web Crawler and Search</h1>
+        
+        <!-- Input field for website link -->
+        <label for="website-url">Enter website URL to crawl:</label>
+        <input type="text" id="website-url" placeholder="https://example.com">
+        <button onclick="crawlWebsite()">Crawl Website</button>
+
+        <!-- Search bar for asking questions -->
+        <div id="search-container">
+            <label for="search-query">Search:</label>
+            <input type="text" id="search-query" placeholder="Enter your query">
+            <button onclick="search()">Search</button>
+            <div id="search-results"></div>
+        </div>
+
+        <!-- History of previous URLs and searches -->
+        <div class="history">
+            <div class="history-title">Previous URLs:</div>
+            <div id="previous-urls"></div>
+            <div class="history-title">Previous Searches:</div>
+            <div id="previous-searches"></div>
+        </div>
+
+        <!-- Fancy Loader -->
+        <div id="loader"></div>
+    </div>
+
+    <script>
+        // Function to save URL to local storage
+        function saveUrl(url) {
+            let previousUrls = JSON.parse(localStorage.getItem('previousUrls')) || [];
+            if (!previousUrls.includes(url)) {
+                previousUrls.push(url);
+                localStorage.setItem('previousUrls', JSON.stringify(previousUrls));
+            }
+        }
+
+        // Function to save search query to local storage
+        function saveSearchQuery(query) {
+            let previousSearches = JSON.parse(localStorage.getItem('previousSearches')) || [];
+            if (!previousSearches.includes(query)) {
+                previousSearches.push(query);
+                localStorage.setItem('previousSearches', JSON.stringify(previousSearches));
+            }
+        }
+
+        // Function to display previous URLs and searches
+        function displayHistory() {
+            const previousUrlsContainer = document.getElementById('previous-urls');
+            const previousSearchesContainer = document.getElementById('previous-searches');
+            previousUrlsContainer.innerHTML = '';
+            previousSearchesContainer.innerHTML = '';
+            let previousUrls = JSON.parse(localStorage.getItem('previousUrls')) || [];
+            let previousSearches = JSON.parse(localStorage.getItem('previousSearches')) || [];
+            previousUrls.forEach(url => {
+                const urlElement = document.createElement('div');
+                urlElement.classList.add('history-item');
+                urlElement.textContent = url;
+                urlElement.onclick = () => {
+                    document.getElementById('website-url').value = url;
+                    crawlWebsite();
+                };
+                previousUrlsContainer.appendChild(urlElement);
+            });
+            previousSearches.forEach(query => {
+                const queryElement = document.createElement('div');
+                queryElement.classList.add('history-item');
+                queryElement.textContent = query;
+                queryElement.onclick = () => {
+                    document.getElementById('search-query').value = query;
+                    search();
+                };
+                previousSearchesContainer.appendChild(queryElement);
+            });
+        }
+
+        async function crawlWebsite() {
+            const websiteUrl = document.getElementById('website-url').value;
+            showLoader();
+            try {
+                // Make API call to crawl the website
+                const crawlResponse = await fetch('http://localhost:4000/crawl', {
+                    method: 'POST',
+                    body: JSON.stringify({ url: websiteUrl }),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const crawlData = await crawlResponse.json();
+                if (crawlData.success) {
+                    // Show the search container if crawling was successful
+                    document.getElementById('search-container').style.display = 'block';
+                    // Save the URL to local storage
+                    saveUrl(websiteUrl);
+                    // Update history display
+                    displayHistory();
+                } else {
+                    alert('Failed to crawl website. Please try again.');
+                }
+            } catch (error) {
+                console.error("Error crawling website:", error);
+                alert('Failed to crawl website. Please try again.');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        async function search() {
+            const query = document.getElementById('search-query').value;
+            showLoader();
+            try {
+                // Make API call to fetch search results
+                const searchResponse = await fetch(`http://localhost:4000/query?query=${query}`);
+                const searchData = await searchResponse.json();
+                displaySearchResults(searchData.results);
+                // Save the search query to local storage
+                saveSearchQuery(query);
+                // Update history display
+                displayHistory();
+            } catch (error) {
+                console.error("Error fetching search results:", error);
+                alert('Failed to fetch search results. Please try again.');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function displaySearchResults(results) {
+            const searchResultsContainer = document.getElementById('search-results');
+            searchResultsContainer.innerHTML = ''; // Clear previous results
+            if (results.length === 0) {
+                searchResultsContainer.innerHTML = 'No results found.';
+            } else {
+                results.forEach(result => {
+                    const resultElement = document.createElement('div');
+                    resultElement.classList.add('result');
+                    resultElement.innerHTML = `
+                        <div class="result-title">${result.text}</div>
+                        <div class="result-text">Score: ${result.score.toFixed(2)}</div>
+                    `;
+                    searchResultsContainer.appendChild(resultElement);
+                });
+            }
+        }
+
+        function showLoader() {
+            document.getElementById('loader').style.display = 'block';
+        }
+
+        function hideLoader() {
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        // Display initial history when the page loads
+        displayHistory();
+    </script>
+</body>
+</html>
