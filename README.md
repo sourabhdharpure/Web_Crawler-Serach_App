@@ -26,3 +26,4 @@ Run the Frontend server
 
 
 
+![Screenshot from 2024-04-18 14-31-53](https://github.com/sourabhdharpure/Web_Crawler-Serach_App/assets/35331618/ba5af496-3065-40d6-8a2c-2da305e84f2c)
